@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>RC CAR LTE - Gamepad</title>
+<style>
+body { background:black; color:white; text-align:center; font-family:Arial; }
+img { width:640px; border:4px solid lime; }
+</style>
+</head>
+<body>
+
+<h2>🚗 RC CAR LIVE (Gamepad R2/L2)</h2>
+<img id="cam">
+<p>R2 = MAJU | L2 = MUNDUR | Joystick kiri = BELOK</p>
+
+<button id="startBtn" style="padding:15px;font-size:18px;">
+🎮 AKTIFKAN GAMEPAD
+</button>
+
+<p id="status">Status: Menunggu input...</p>
+
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+const socket = io();
+const cam = document.getElementById("cam");
+const statusText = document.getElementById("status");
+
+let motor_status = "STOP";
+let servo_status = "CENTER";
+const DEADZONE = 0.2;
+let gamepadIndex = null;
+
+// ================== CAMERA ==================
+socket.on("video", data => {
+    cam.src = "data:image/jpeg;base64," + data;
+});
+
+// ================== GAMEPAD ==================
+function send_control() {
+    socket.emit("control", motor_status + ";" + servo_status);
+}
+
+function pollGamepad() {
+    const gamepads = navigator.getGamepads();
+    const gp = gamepads[gamepadIndex];
+
+    if (gp) {
+        // Motor
+        if (gp.buttons[7]?.pressed) motor_status = "MAJU";
+        else if (gp.buttons[6]?.pressed) motor_status = "MUNDUR";
+        else motor_status = "STOP";
+
+        // Servo
+        const axis = gp.axes[0];
+        if (axis < -DEADZONE) servo_status = "KIRI";
+        else if (axis > DEADZONE) servo_status = "KANAN";
+        else servo_status = "CENTER";
+
+        send_control();
+        statusText.innerText =
+            `🎮 ${gp.id} | Motor:${motor_status} Servo:${servo_status}`;
+    }
+
+    requestAnimationFrame(pollGamepad);
+}
+
+// ================== START BUTTON ==================
+document.getElementById("startBtn").onclick = () => {
+    const gps = navigator.getGamepads();
+    for (let i = 0; i < gps.length; i++) {
+        if (gps[i]) {
+            gamepadIndex = i;
+            statusText.innerText = "✅ Gamepad aktif: " + gps[i].id;
+            requestAnimationFrame(pollGamepad);
+            return;
+        }
+    }
+    alert("❌ Gamepad belum terdeteksi! Tekan tombol di controller dulu.");
+};
+</script>
+
+</body>
+
+</html>
