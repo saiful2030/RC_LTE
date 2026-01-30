@@ -7,5 +7,4 @@ Menggunakan:
 - Web browser dengan gamepad control
 - Base64 video streaming
 
-## 🔧 Struktur Project
 
